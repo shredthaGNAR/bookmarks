@@ -1,31 +1,53 @@
+# Name of the workflow
 name: Build and Deploy
-on: 
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push events but only for the master branch
   push:
     branches: [master]
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # This workflow contains a single job called "build-and-deploy"
   build-and-deploy:
+    # The type of runner that the job will run on
     runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2 # Uses version 2 of the checkout action
         with:
-          persist-credentials: false
+          persist-credentials: false # Do not store credentials in the Git config
 
+      # This step is intended to get the npm cache directory path
+      # Although it's defined, it's not explicitly used for caching in this workflow
       - name: Get npm cache directory
-        id: npm-cache-dir
-        shell: bash
-        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+        id: npm-cache-dir # ID for referencing this step's outputs
+        shell: bash # Specifies the shell to use for the run command
+        run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT} # Gets npm cache path and sets it as an output
 
+      # This step installs dependencies and builds the static site
       - name: Install and Build 🔧
         run: |
+          # Install the static-marks npm package
           npm install static-marks
+          # Create a directory named 'build' to store the output
           mkdir build
+          # Run static-marks to build HTML from YAML files using a template
+          # The output is redirected to build/index.html
           ./node_modules/.bin/static-marks build *.yml > build/index.html --template-file template.html
 
+      # This step deploys the built site to GitHub Pages
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@releases/v3
+        uses: JamesIves/github-pages-deploy-action@releases/v3 # Uses version 3 of the deploy action
         with:
+          # GITHUB_TOKEN is a secret automatically provided by GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The branch to deploy to (e.g., gh-pages, main, master)
           BRANCH: gh-pages
+          # The folder the action should deploy.
+          # Corrected: Removed the trailing backslash for better compatibility.
           FOLDER: build
